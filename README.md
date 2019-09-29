@@ -1,6 +1,6 @@
 # Rust Study
 
-notes:
+Notes:
 
 - The Rust Programming Language
   - [Note 1](./notes/the-rust-programming-language/note-1.md)
