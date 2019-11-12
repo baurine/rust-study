@@ -1,5 +1,7 @@
 # Rusy by Example notes
 
+- [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
+
 ## 1. Hello World
 
 注释的几种方式：
