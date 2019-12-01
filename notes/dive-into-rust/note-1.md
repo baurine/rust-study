@@ -79,6 +79,15 @@ as
 
 略。
 
+## 3. 语句和表达式
+
+- 语句 (Statement)，不产生值，返回值是 ()，带分号
+- 表达式 (Expression)，产生值，有类型，不带分号
+
+if-else, loop, while, for ...
+
+## 4. 函数
+
 ### 4.2 发散函数 (Diverging functions)
 
 如果一个函数不能正常返回，那么它的返回类型是 `!`，称之为发散函数。比如：
@@ -106,6 +115,32 @@ let p = if x {
 因为对于 if...else 分支来说，两个分支的类型必须相同，所以编译器规则 `!` 可以和任意类型相容，这样才能通过编译。
 
 `continue;`, `break;` 的返回类型也是 never type。
+
+### 4.3 main() 函数
+
+Rust 中的 main() 函数是无参的，运行时传进来的参数通过 std::env::args() 获取，而不从 main() 函数的参数中获取，获取环境变量通过 std::env::var() 和 std::env::vars() 方法。
+
+### 4.4 const fn
+
+编译期执行的函数，返回值为编译期常量。
+
+### 4.5 函数递归调用
+
+```rust
+fn fib(n: u32) -> u32 {
+  if n == 1 || n == 2 {
+    n
+  } else {
+    fib(n-1) + fib(n-2)
+  }
+}
+
+fn main() {
+  println!("{}", fib(8));
+}
+```
+
+Rust 还没有实现尾递归优化。
 
 ## 5. trait
 
