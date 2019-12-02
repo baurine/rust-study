@@ -185,6 +185,8 @@ trait {
 
 大写的 Self 表示类型，它指代目标 struct，小写的 self 是相应的实例变量。
 
+可以 `impl traitA for traitB`，为 trait 实现另一个 trait，这个在后面还会详述。
+
 ### 5.2 静态方法
 
 第一个参数不是 self 的方法。
@@ -204,6 +206,129 @@ impl Double for i32 {
 ```
 
 但也有限制，既所谓的孤儿规则：impl 块要么与 trait 的声明在同一个 crate 中，要么与类型的声明在同一个 crate 中。如果 trait 和 类型都来自外部，那编译器不允许你为这个类型 impl 该 trait。
+
+### 5.4 完整函数调用语法
+
+如果一个 struct 实现了两种 trait，但这两种 trait 声明了相同的函数，在调用这个函数时，需要这样使用：
+
+```rust
+trait Cook {
+  fn start(&self);
+}
+trait Wash {
+  fn start(&self);
+}
+struct Chef;
+impl Cook for Chef {...}
+impl Wash for Chef {...}
+
+fn main() {
+  let me = Chef;
+  me.start() // 有歧义
+  // 正确使用
+  <Cook>::start(&me);
+  <Chef as Wash>::start(&me);
+}
+```
+
+### 5.5 trait 约束和继承
+
+一般情况下 trait 不能直接用于声明变量或参数的类型，只能用来在泛型用来约束泛型的类型。
+
+```rust
+fn my_print<T : Debug>(x: T) {
+  println!("The value is {:?}.", x);
+}
+// or
+fn my_print<T>(x: T) where T: Debug {
+  println!("The value is {:?}.", x);
+}
+```
+
+trait 之间可以继承，struct 实现子 trait 时，也要同时实现父 trait。
+
+```rust
+trait Base {}
+trait Derived : Base {}
+struct T;
+impl Derived for T {...}
+// 同时需要下面这句编译才能通过
+impl Base for T {...}
+```
+
+### 5.6 Derive
+
+Rust 里面为类型 impl 某些 trait 的时候，逻辑是非常机械化的。为许多类型重复而单调地 impl 某些 trait，是非常枯燥的事情。为此，Rust 提供了一个特殊的 attribute，它可以帮我们自动 impl 某些 trait。
+
+```rust
+#[derive(Copy, Clone, Default, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+struct Foo {
+  data : i32
+}
+```
+
+### 5.7 trait 别名
+
+```rust
+trait HttpService = Service<Request = http::Request,
+        Response = http::Response,
+        Error = http::Error>;
+```
+
+### 5.8 标准库中常见的 trait 简介
+
+- Dispaly / Debug: 用于 println!
+- PartialOrd / Ord / PartialEq / Eq: 用于浮点数/整数间的比较
+- Sized: 用来给编译器进行标记的，官方教程解释得比较清楚
+- Default
+
+## 6. 数组和字符串
+
+### 6.1 数组
+
+数组的定义：`[T; n]`，长度固定。相对的 `[T]` 是动态大小类型 (Dynamic Size Type  - DST)，`&[T]` 是切片，是胖指针，大小固定 (2 usize)。
+
+对数组进行遍历，数组本身没有实现迭代器 trait，但数组切片实现了，因为可以对数组切片使用 for...in
+
+```rust
+fn main() {
+  let v = [0_i32; 10];
+  for i in &v {
+    println!("{}", i);
+  }
+}
+```
+
+(`&v` 在这里是数组切片，不是借用，怎么区分？ -> 两者等价)
+
+数组切片：对数组进行借用操作，可以生成一个数组切片，类型变为 `&[T]`。
+
+切片是胖指针。胖指针点两个 uszie，一个 usize 指向源数组地址，一个 usize 为数组长度。
+
+Range: `1..10` 是 `Range { start: 1, end: 10 }` 的语法糖。Range 实现了迭代器 trait，所以可以直接在它上面使用 for...in
+
+### 6.2 字符串
+
+#### 6.2.1 &str
+
+主要两种类型：&str 和 String。
+
+str 是 Rust 内置类型，&str 是对 str 的借用，也是它的切片。Rust 的字符串内部使用 utf-8 编码 (应该是指 unicode 吧，utf-8 是存储和传输用的，内存中应该是 unicode)，一个 char 占 4 个字节 (4 u8)，所以 Rust 中字符串不能视为 char 类型的数组，而更接近是 u8 类型的数组。
+
+这样设计的一个缺陷是，不能支持 O(1) 时间复杂度的索引操作，即要找第 n 个字符，不能用 `s[n]` 获得。因为 utf-8 是变长编码，所以必须从头遍历，时间复杂度是 O(n)。相应的代码：`s.chars().nth(n)`。
+
+#### 6.2.2 String
+
+&str 无法对指向的字符串进行扩容 (即使是 `&mut str` 也不行)，但 String 可以。String 是在堆上申请的空间，&String 会被编译器自动转换成 &str 类型。
+
+```rust
+fn main() {
+  let mut s = String::from("hello");
+  s.push(' ');
+  s.push("world");
+  println!("{}", s);
+}
+```
 
 ---
 
