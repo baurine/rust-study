@@ -286,7 +286,7 @@ trait HttpService = Service<Request = http::Request,
 
 ### 6.1 数组
 
-数组的定义：`[T; n]`，长度固定。相对的 `[T]` 是动态大小类型 (Dynamic Size Type  - DST)，`&[T]` 是切片，是胖指针，大小固定 (2 usize)。
+数组的定义：`[T; n]`，长度固定。相对的 `[T]` 是动态大小类型 (Dynamic Size Type - DST)，`&[T]` 是切片，是胖指针，大小固定 (2 usize)。
 
 对数组进行遍历，数组本身没有实现迭代器 trait，但数组切片实现了，因为可以对数组切片使用 for...in
 
@@ -330,7 +330,38 @@ fn main() {
 }
 ```
 
----
+## 7. 模式解构
+
+解构，在函数参数中也能直接用解构。
+
+匹配，match, `_`, if-let, while-let
+
+匹配中使用 ref 和 mut。(后面还会讲到)
+
+## 8. 深入类型系统
+
+Rust 的类型系统实际是代数类型系统。
+
+一个类型所有取值的可能性叫作这个类型的 “基数” (cardinality)。
+
+Never Type (!):
+
+- 运行时不存在
+- 占用空间为 0
+- 不能返回
+- 可能被转换成任意类型
+
+Never Type，单元类型 `()` 用来统一类型。
+
+借助 `()` 和 HashMap 实现 HashSet，设置其 value 为 `()`。
+
+```rust
+pub struct HashSet<T, S = RandomState> {
+  map: HashMap<T, (), S>,
+}
+```
+
+Option 类型，解决 null 问题。
 
 ## 11. 所有权和移动语义
 
