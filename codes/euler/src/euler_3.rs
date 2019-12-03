@@ -11,15 +11,15 @@ fn is_prime(num: u64) -> bool {
   true
 }
 
-pub fn solution_1() -> u64 {
-  let big_num = 600851475143;
-  for i in (2..=big_num).rev() {
-    if big_num % i == 0 && is_prime(i) {
-      return i;
-    }
-  }
-  1
-}
+// pub fn solution_1() -> u64 {
+//   let big_num = 600851475143;
+//   for i in (2..=big_num).rev() {
+//     if big_num % i == 0 && is_prime(i) {
+//       return i;
+//     }
+//   }
+//   1
+// }
 
 pub fn solution_2() -> u64 {
   let mut big_num = 600851475143;
