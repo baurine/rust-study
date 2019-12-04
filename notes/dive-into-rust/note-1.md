@@ -1,5 +1,7 @@
 # 《深入浅出 Rust》Note
 
+第一部分：1 ~ 9 章
+
 ## 1. 概述
 
 ### 1.4 prelude
@@ -362,6 +364,39 @@ pub struct HashSet<T, S = RandomState> {
 ```
 
 Option 类型，解决 null 问题。
+
+## 9. 宏
+
+先暂时了解，举了一个实现类似 `vec!` 宏的 `hashmap!` 宏的例子。
+
+宏的作用：
+
+- 实现编译期检查
+- 实现编译期计算
+- 实现自动代码生成
+- 实现语法扩展
+
+一个示例：
+
+```rust
+let counts = hashmap!['A' => 0, 'C' => 0, 'G' => 0, 'T' => 0];
+
+macro_rule! hashmap {
+  ($($key: expr => $val: expr), *) => {{
+    let mut map = ::std::collections::HashMap::new();
+    $( map.insert($key, $val); )*
+    map
+  }}
+}
+```
+
+---
+
+第二部分: 2 ~ 10 章
+
+## 10. 内存管理基础
+
+内存安全的概念介绍。
 
 ## 11. 所有权和移动语义
 
