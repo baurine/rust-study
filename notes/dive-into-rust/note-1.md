@@ -1,5 +1,84 @@
 # 《深入浅出 Rust》Note
 
+## 1. 概述
+
+### 1.4 prelude
+
+- crate : 理解成项目，一个完整的编译单元，可以编译成 lib 或可执行文件
+- mod: 理解成 namespace
+
+极简标准库 std，一些常用的依赖，rust 放到了 std::prelude 模块中，每个项目都会自动导入 `std::prelude::*`。
+
+## 2. 变量和类型
+
+rust 变量先声明后使用，使用前必须初始化。(有没有 lateinit?)
+
+绑定
+
+模式解构
+
+mut x 是一个组合
+
+```rust
+let (mut a, mut b) = (1, 2);
+let Point { x: ref a,  y: ref b} = p;
+```
+
+变量庶蔽，类型推导
+
+用 type 声明类型别名
+
+- static - 静态变量，全局，如果要修改，必须放到 unsafe 块中
+- const - 常量，不可用 mut 修饰，编译时可能被内联掉
+
+### 2.2 基本数据类型
+
+- bool
+- char: 存储单个 unicode 字符，4 个字节，如果想用一个字节存储字符，前面加上 b 声明。比如 `let y:u8 = b'A'; let s:&[u8;5] = b"hello";`
+- 整数类型：i8/i16/i32/i64/i128/isize, u8/u16/u32/u64/u128/usize，其中 isize/usize 是指针大小，长度和系统相关，一般是 4 字节 (32 位系统) 或 8 字节 (64 位系统)
+
+#### 2.2.4 整数溢出
+
+c 语言对这个的处理比较随意，不会出错，取决于开发者。rust 倾向于预防 bug。debug 模式下溢出会 panic，release 下直接截断。对安全性较高的可以使用 `check_*`, `saturating_*`, `wrapping_*` 系列函数。
+
+#### 2.2.5 浮点类型
+
+f32/f64 Nan, Infinite ...
+
+#### 2.2.6 指针类型
+
+`Box<T>`, `&T`, `&mut T`, `*const T`, `*mut T` (没有 `*T` 的写法)
+
+- `Box<T>` - 有所有权的指针
+- `&T` - 无所有权，借用，只读
+- `&mut T` - 无所有权，借用，可写
+- `*const T` - 只读裸指针，无生命周期
+- `*mut T` - 可写裸指针，无生命周期
+
+智能指针：
+
+- `Rc<T>`
+- `Arc<T>`
+- `Cow<'a, T>`
+
+#### 2.2.7 类型转换
+
+as
+
+### 2.3 复合数据类型
+
+- tuple - (a, b, c)
+- 空元组 - () ，单元类型
+- 结构体：struct，三种
+  - 普通 struct Point { x:i32, y: i32 }
+  - tuple struct: struct Inches(i32); 用来实现类型别名 alias, struct Color(i32, i32, i32)
+  - 空 struct，只用来实现 trait
+- enum: 也有几种表示形式。代数类型系统。
+
+#### 2.3.5 - 类型递归定义
+
+略。
+
 ### 4.2 发散函数 (Diverging functions)
 
 如果一个函数不能正常返回，那么它的返回类型是 `!`，称之为发散函数。比如：

@@ -500,3 +500,26 @@ use std::io::Result as IoResult;
 **使用外部包**
 
 use 的 n 种写法，暂略。
+
+**引用同项目中的其它文件**
+
+比如将一些函数放在 src/sound.rs 中，在 src/main.rs 中如何使用 src/sound.rs 中的代码，使用 `mod sound;`。
+
+```rust
+// src/sound.rs
+pub fn play() {
+  ...
+}
+pub mod instrument {
+  pub fn init() {
+    ...
+  }
+}
+
+// src/main.rs
+mod sound; // 声明导入与 sound 同名的文件中的代码
+fn main() {
+  sound::instrument::init();
+  sound::play();
+}
+```
