@@ -1,6 +1,7 @@
 /*
 求小于 1000 的能被 3 或 5 整除的所有整数之和。
 */
+
 pub fn solution_1() -> u32 {
   let mut sum = 0u32;
   for i in 1..1000 {

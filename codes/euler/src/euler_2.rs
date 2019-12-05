@@ -1,6 +1,7 @@
 /*
 400 万之内所有偶数的斐波那契数字之和。
 */
+
 pub fn solution_1() -> u32 {
   let mut fib_arr = vec![1, 2];
   let mut sum = 2;

@@ -3,6 +3,7 @@ By listing the first six prime numbers: 2, 3, 5, 7, 11, and 13, we can see that 
 
 What is the 10 001st prime number?
 */
+
 fn is_prime(n: u32) -> bool {
   for i in 2..(n / 2 + 1) {
     if n % i == 0 {

@@ -9,16 +9,35 @@ fn is_palindromic(n: u64) -> bool {
 }
 
 pub fn solution_1() -> u64 {
+  let mut palindromic = 0;
+
   for x in (100..=999).rev() {
-    for y in (100..=999).rev() {
+    for y in (100..=x).rev() {
       let prod = x * y;
+      if prod <= palindromic {
+        break;
+      }
       if is_palindromic(prod) {
+        palindromic = prod;
         println!("{} * {} = {}", x, y, prod);
-        return prod;
       }
     }
   }
-  0
+  palindromic
+}
+
+pub fn solution_2() -> u64 {
+  let mut palindromic = 0;
+  for x in 100..=999 {
+    for y in x..=999 {
+      let prod = x * y;
+      if is_palindromic(prod ) && prod > palindromic {
+        palindromic = prod;
+        println!("{} * {} = {}", x, y, prod);
+      }
+    }
+  }
+  palindromic
 }
 
 /////////////////////////////////////
@@ -34,6 +53,11 @@ mod tests {
 
   #[test]
   fn test_solution_1() {
-    assert_eq!(solution_1(), 580085);
+    assert_eq!(solution_1(), 906609);
+  }
+
+  #[test]
+  fn test_solution_2() {
+    assert_eq!(solution_2(), 906609);
   }
 }
