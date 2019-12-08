@@ -608,6 +608,8 @@ Cow: Copy on Write。
 
 ## 18. Panic
 
+panic，提前终止程序。
+
 ## 19. Unsafe
 
 ## 20. Vec 源码分析
