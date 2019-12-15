@@ -916,4 +916,166 @@ pub enum Poll<T> {
 
 可以把它理解成 JavaScript 中的 Promise，状态相当于 fullfill 和 pending。
 
-详略。
+因为对 JavaScript 的 Promise/async/await 比较熟悉了，所以这一块理解起来没有什么问题，详略。
+
+## 26. 标准库简介
+
+### 26.1 类型转换
+
+as 用于基本类型的转换。还有其它一些，比如 AsRef/AsMut trait。
+
+```rust
+pub trait AsRef<T: ?Sized> {
+  fn as_ref(&self) -> &T;
+}
+pub trait AsMut<T: ?Sized> {
+  fn as_mut(&mut self) -> &mut T;
+}
+```
+
+String 实现了好几种 AsRef:
+
+```rust
+impl AsRef<str> for String
+impl AsRef<[u8]> for String
+impl AsRef<OsStr> for String
+impl AsRef<Path> for String
+```
+
+Borrow/BorrowMut:
+
+```rust
+pub trait Borrow<Borrowed: ?Sized> {
+  fn borrow(&self) -> &Borrowed;
+}
+```
+
+From/Into trait，略。
+
+ToOwned，从一个 `&T` 类型变量创造一个新的 U 类型变量。
+
+ToString/FromStr。
+
+### 26.2 运算符重载
+
+Rust 支持运算符重载。先跳过。
+
+### 26.3 I/O
+
+平台相关的字符串：OsString / OsStr。
+
+文件和路径：PathBuf / Path。
+
+标准输入输出：std::io::stdin() / std::io::stdout()。
+
+进程启动参数，这个和其它语言不一样，启动参数不通过 main() 函数的参数获取，而是通过 std::env::args() 或 std::env::args_os() 获取，进程返回值通过 std::process::exit() 指定。
+
+### 26.4 Any
+
+(啊，原来 Rust 也有 Any...)，估计很少使用，先跳过。
+
+---
+
+第四部分 - 线程安全 - 27 ~ 31 章
+
+Rust 编译器可以在编译阶段避免所有的数据竞争 (Data Race) 问题。这也是 Rust 的核心竞争力之一。
+
+## 27. 线程安全
+
+### 27.1 什么是线程
+
+略。
+
+### 27.2 启动线程
+
+Rust 使用 `thread::spawn()` 启动一个子线程，使用 `thread.join()` 等待子线程结束。(常规操作)
+
+```rust
+use std::thread;
+// child 的类型是 JoinHandle<T>,这个T是闭包的返回类型
+let child = thread::spawn(move || {
+  // 子线程的逻辑
+});
+// 父线程等待子线程结束
+let res = child.join();
+```
+
+其它函数：
+
+- thread::sleep()
+- thread::yield_now() - 放弃当前线程的执行，要求线程调度器执行线程切换
+- thread::current()
+- thread::park() - 暂停当前线程，进入等待状态。可以在其它线程上执行该线程对象上的 unpark() 方法来重新唤起该线程
+- thread::Thread::unpark() - 恢复一个线程的执行
+
+示例：
+
+```rust
+use std::thread;
+use std::time::Duration;
+
+fn main() {
+  let t = thread::Builder::new()
+    .name("child1".to_string())
+    .spawn(move || {
+      println!("enter child thread.");
+      thread::park();
+      println!("resume child thread");
+    })
+    .unwrap();
+  println!("spawn a thread");
+  thread::sleep(Duration::new(5, 0));
+  t.thread().unpark();
+  t.join();
+  println!("child thread finished");
+}
+```
+
+### 27.3 免数据竞争
+
+Rust 多线程的特别，不像其它语言的多线程，Rust 没有办法在多线程中直接读写普通的共享变量，除非使用 Rust 提供的线程安全相关的设施，从而避免了数据竞争。
+
+### 27.4 Send & Sync
+
+Rust 实现免数据竞争的两个 trait：
+
+- std::marker::Send - 如果类型 T 实现了 Send 类型，那说明这个类型的变量在不同的线程中传递所有权是安全的
+- std::marker::Sync - 如果类型 T 实现了 Sync 类型，那说明在不同的线程中使用 `&T` 访问同一个变量是安全的
+
+## 28. 详解 Send 和 Sync
+
+### 28.1 什么是 Send
+
+- 如果一个类型可以安全地从一个线程 move 进入另一个线程，那它就是 Send 类型。
+- 内部不包含引用的类型，都是 Send。
+- `Mutex<T>` 是 Send，无论如何访问都要 lock，所以所有权在哪个线程不重要。
+- ...
+
+`!Send` 表示非 Send 类型。
+
+### 28.2 什么是 Sync
+
+- 基本数字类型肯定是 Sync
+- ...
+
+`!Sync` 表示非 Sync 类型。
+
+暂时没懂，先跳过。
+
+### 28.3 自动推理
+
+Send / Sync 是 marker trait，没有方法，只是用来给类型作标记。
+
+标准库中把所有基本类型，以及标准库中定义的类型，都做了合适 的 Send/Sync 标记。
+
+### 28.4 小结
+
+> Rust 语言本身并不知晓 "线程" "并发" 具体是什么，而是抽象出了一些更高级的概念 Send/Sync，用来描述类型在并发环境下的特性。std::thread::spawn 函数就是一个普通函数，编译器没有对它做任何特殊处理。它能保证线程安全的关键是，它对参数有合理的约束条件。这样的设计使得 Rust 在线程安全方面具备非常好的扩展性。
+
+(顶级的抽象能力)
+
+> Rust 的这个设计实际上将开发者分为了两个阵营，一部分是核心库的开发者，一部分是业务逻辑开发者。对于一般的业务开发者来说，完全没有必要写任何 unsafe 代码，更没有必要为自己的自定义类型去实现 Sync / Send，直接依赖编译器的自动推导即可。这个阵营中的程序员可以完全享受编译器和基础库带来的安全性保证，无须投入太多精力去管理细节，极大地减轻脑力负担。
+
+> 而对于核心库的开发者，则必须对 Rust 的这套机制非常了解。比如，他们可能需要设计自己的 "无锁数据类型" "线程池" "管道"等各种并行编程的基础设施。这种时候，就有必要对这些类型使用 unsafe impl Send/Sync 设计合适的接口。这些库本身的内部实现是基于 unsafe 代码做的，它享受不到编译器提供的各种安全检查。相反，这些库本身才是保证业务逻辑代码安全性的关键。
+
+(got! unsafe 是给核心库开发者使用的)
