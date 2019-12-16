@@ -1072,10 +1072,79 @@ Send / Sync 是 marker trait，没有方法，只是用来给类型作标记。
 
 > Rust 语言本身并不知晓 "线程" "并发" 具体是什么，而是抽象出了一些更高级的概念 Send/Sync，用来描述类型在并发环境下的特性。std::thread::spawn 函数就是一个普通函数，编译器没有对它做任何特殊处理。它能保证线程安全的关键是，它对参数有合理的约束条件。这样的设计使得 Rust 在线程安全方面具备非常好的扩展性。
 
-(顶级的抽象能力)
+(顶级的抽象能力 -- 不过看了后面，还是使用加锁的老套路...基本上只有加锁才能符合 Send/Sync)
 
 > Rust 的这个设计实际上将开发者分为了两个阵营，一部分是核心库的开发者，一部分是业务逻辑开发者。对于一般的业务开发者来说，完全没有必要写任何 unsafe 代码，更没有必要为自己的自定义类型去实现 Sync / Send，直接依赖编译器的自动推导即可。这个阵营中的程序员可以完全享受编译器和基础库带来的安全性保证，无须投入太多精力去管理细节，极大地减轻脑力负担。
 
 > 而对于核心库的开发者，则必须对 Rust 的这套机制非常了解。比如，他们可能需要设计自己的 "无锁数据类型" "线程池" "管道"等各种并行编程的基础设施。这种时候，就有必要对这些类型使用 unsafe impl Send/Sync 设计合适的接口。这些库本身的内部实现是基于 unsafe 代码做的，它享受不到编译器提供的各种安全检查。相反，这些库本身才是保证业务逻辑代码安全性的关键。
 
 (got! unsafe 是给核心库开发者使用的)
+
+## 29. 状态共享
+
+基本上和其它语言关于数据同步的概念没有太大差别：加锁，互斥，读写锁，原子操作，条件变量，TLS 等。
+
+(复习一下 c++ 的数据竞争与同步)
+
+- Arc：Rc 用于单线程，Arc 用于多线程，Arc 是 Rc 的线程安全版本，A 表示 Atomic。Arc 用来共享引用，不能修改
+- Mutex：用 Arc 配合使用用来修改共享变量
+- RwLock：读写锁，和 Mutex 类似，但暴露的 API 不一样
+- Atomic：原子操作
+- 死锁：Rust 无法在编译期检测出死锁，只能开发者自己注意
+- Barrier：多个线程在某个点上一起等待，然后再继续执行
+- Convar：条件变量
+- 全局变量：Rust 允许全局变量，但修改全局变量必须用 unsafe
+- 线程局部存储：TLS
+
+## 30. 管道
+
+(莫不是从 Go 里借鉴过来的?)
+
+mpsc: Multi-producers, single-consumer FIFO queue。在不同线程之间建立一个通信管道 (channel)，一边发送消息，一边接收消息。
+
+> Do not communicate by sharing memory;instead，share memory by communicating. -- Effective Go
+
+### 30.1 异步管道
+
+发送端发送完后就马上返回了。管道缓冲区无限大。
+
+示例：
+
+```rust
+use std::thread;
+use std::sync::mpsc::channel;
+fn main() {
+  let (tx, rx) = channel();
+  thread::spawn(move|| {
+    for i in 0..10 { tx.send(i).unwrap();
+    }
+  });
+  while let Ok(r) = rx.recv() {
+    println!("received {}", r);
+  }
+}
+```
+
+### 30.2 同步管道
+
+管道缓冲区容里有限，如果缓冲区满了，发送端发送数据时会阻塞，直到接收端从缓冲区接收数据使缓冲区有剩余空间。
+
+示例：
+
+```rust
+use std::thread;
+use std::sync::mpsc::sync_channel;
+fn main() {
+  let (tx, rx) = sync_channel(1);
+  tx.send(1).unwrap();
+  println!("send first");
+  thread::spawn(move|| {
+    tx.send(2).unwrap();
+    println!("send second");
+  });
+  println!("receive first {}", rx.recv().unwrap());
+  println!("receive second {}", rx.recv().unwrap());
+}
+```
+
+所以管道无非就是一个消费者模型的 FIFO，自己也容易实现，只不过 Go 和 Rust 把这个实现内置到语言里了。
