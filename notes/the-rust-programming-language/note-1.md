@@ -20,6 +20,8 @@
 
 ### 1.1 安装
 
+[rustup: the Rust toolchain installer](https://github.com/rust-lang/rustup/blob/master/README.md)
+
 安装，通过 rustup 下载安装 rust，先要安装 rustup，安装 rustup 时会自动安装最新版 rust。
 
 ```shell
@@ -37,6 +39,18 @@ $ rustup self uninstall
 
 ```shell
 $ rustc --version
+```
+
+安装 nightly 版本：
+
+```sh
+$ rustup toolchain install nightly
+```
+
+切换到 nightly 版本：
+
+```sh
+$ rustup default nightly
 ```
 
 ### 1.2 Hello World
