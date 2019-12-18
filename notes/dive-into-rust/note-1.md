@@ -1183,3 +1183,100 @@ cargo 也支持类似 npm 中的 workspace，将多个 crate 在一个 repo 中�
 (看来借鉴了一些 js 的模块管理)
 
 另外，Rust 中用到的模块只能在入口 main.rs 中统一声明，如果没在 main.rs 中声明，那么此模块就不会被编译。
+
+## 33. 错误处理
+
+Rust 将错误分为两大类：
+
+- 不可恢复错误，使用 panic 处理
+- 可恢复错误，使用返回值处理，而且一般使用 Result 类型作为返回值
+
+问号运算符，遇到错误提前返回。
+
+新的 Failure 库，可能将来用来替代标准库的 Error trait。
+
+详略，在《the rust programming language》中有记录。
+
+## 34. FFI
+
+FFI (foreign functions interface)，不同语言之间相互调用的接口。Rust 支持与 C 之间的相互调用，即 Rust 可以调用 C 库 (静态库或动态库)，C 也支持直接调用 Rust 生成的库。当然，导出的接口写法跟一般的 Rust 稍微有一些特别，比如用 `#[no_mangle]` 修饰，向编译器表明编译时不要改变函数名称，函数前还要加上 `extern "c"` 修饰等。示例：
+
+```rust
+#[no_mangle]
+pub extern "C" fn rust_capitalize(s: *mut c_char) {
+  unsafe {
+    let mut p = s as *mut u8;
+    while *p != 0 {
+      let ch = char::from(*p);
+      if ch.is_ascii() {
+        let upper = ch.to_ascii_uppercase();
+        *p = upper as u8;
+      }
+      p = p.offset(1);
+    }
+  }
+}
+```
+
+- 静态库：代码直接内联到二进制中，方法可以直接宿主程序中调用。
+- 动态库，在宿主程度中需要先用 dlopen() 加载，加载成功之后才可以调用它的方法。
+
+其余详略，需要时再细看。
+
+## 35. 文档和测试
+
+### 35.1 文档
+
+(虽然放在了最后一章，但我觉得还是挺重要的，尝试把 euler 项目中的普通注释改为文档注释并生成文档)
+
+注释：
+
+- 普通注释：`//`, `/*...*/`
+- 会生成文档的注释：`//!` `/*!...*/` (用于模块文档), `///`, `/**...*/` (用于函数文档)
+
+示例：
+
+```rust
+mod foo {
+  //! 这块文档是给 `foo` 模块做的说明
+
+  /// 这块文档是给函数 `f` 做的说明
+  fn f() {
+    // 这块注释不是文档的一部分
+  }
+}
+```
+
+文档内部支持 markdown 格式 (记得第一次看到这种功能是在 swift 中)，代码用 \`\` 包围，代码块用 \`\`\` 包围，文档中的代码块在测试时也会被当作测试用例执行 (?? wow, nice!)。
+
+如果文档太长，还可以把文档写在单独的 markdown 中，然后在代码中用一个 attribute 指定相应的文档 (wow, cool!)。示例：
+
+```rust
+#![feature(external_doc)]
+
+#[doc(include = "external-doc.md")]
+pub struct MyAwesomeType;
+```
+
+### 35.2 测试
+
+测试相关的在《the rust programming language》中看过了，这里侧重看一下 benchmark 相关的内容。
+
+使用 `#[bench]` 属性进行 benchmark。示例：
+
+```rust
+#[cfg(test)]
+   mod tests {
+       use super::*;
+       use self::test::Bencher;
+
+  #[bench]
+  fn big_num(b: &mut Bencher) {
+    b.iter(|| gcd(12345, 67890) )
+  }
+}
+```
+
+(在 euler 项目中试一下)
+
+Done，完结于 2019.12.18，从 2019.12.01 号开始阅读，每天 2 章，共花了 18 天，跟预计时间差不多。
