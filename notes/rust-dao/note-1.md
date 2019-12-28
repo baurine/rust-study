@@ -328,3 +328,262 @@ String 和 Vec 类型也是一种智能指针。其余略。
 4.2.3 内存泄漏与内存安全
 
 Rust 并不能完全防止内存泄漏，内存泄漏并不属于内存安全的范畴。
+
+## 第五章 所有权系统
+
+### 5.1 通用概念
+
+- 值类型：数据直接存储在栈中的数据类型
+- 引用类型：数据存储在堆上，栈中只存放指向堆中数据的地址 (指针)
+
+值语义/引用语义
+
+- 值语义：按位复制后，与原始对象无关
+- 引用语义：也叫指针语义，一般是将数据存储在堆内存中，通过栈内存的指针来管理堆内存的数据，并且引用语义禁止按位复制。
+
+浅复制，只复制栈上的数据。深复制，栈和堆上的数据一起复制。
+
+Rust 中原生类型都是值语义，这些类型也被称为 POD (Plain Old Data)。
+
+### 5.2 所有权机制
+
+Rust 中分复制 (Copy) 语义和移动 (Move) 语义。复制语义对应值语义，移动语义对应引用语义。(还有借用吧 - 不对，借用也是一种引用)
+
+详略，其它笔记中已记录。
+
+### 5.3 绑定、作用域和生命周期
+
+用 `let` 声明绑定，默认不可变。(语言的逐渐趋势是将变量由默认可变变成默认不可变)。用 mut 显式声明可变。
+
+详略。
+
+5.3.2 绑定的时间属性 - 生命周期
+
+### 5.4 所有权借用
+
+通过引用借用所有权，详略。
+
+### 5.5 生命周期参数
+
+why？为什么 Rust 需要这个，只有理解了 why，才能真正理解它的机理。
+
+> 值的生命周期和词法作用域有关，但是借用可以在各个函数间传递，必然会跨越多个词法作用域，对于这种情况，Rust 的借用检查器无法自动推断借用的合法性，不合法的借用会产生悬垂指针，造成内存不安全。
+
+解决办法就是显式地手动为参数声明生命周期参数。
+
+借用规则一，借用的生命周期不能长于出借方的生命周期。
+
+```rust
+fn main() {
+  let r;  // 'a start
+  {
+    let x = 5;  // 'b start
+    r = &x;
+  } // 'b end
+  println!("r: {}", r);
+} // 'a end
+```
+
+上例中出借方 x 的生命周期是 'b，借用方 r 的生命周期是 'a，'a > 'b，违反借用规则。由于是在函数内的借用，Rust 借用检查器能自动推断出此借用不合法，因此编译不通过。
+
+5.5.1 显式生命周期参数
+
+```rust
+&i32;         // 引用
+&'a i32;      // 标注生命周期的引用
+&'a mut i32;  // 标注生命周期的可变引用
+```
+
+**标注生命周期参数并不能改变任何引用的生命周期长短，它只用于编译器的借用检查，**来防止悬垂指针。
+
+函数签名中的生命周期参数
+
+```rust
+fn foo<'a>(s: &'a str, t: &'a str) -> &'a str;
+```
+
+规则：输出 (借用方) 的生命周期长度必须不长于输入 (出借方) 的生命周期长度。其实和规则一是一样的。
+
+**禁止在没有任何输入参数的情况下返回引用，**因为会明显造成悬垂指针。示例：
+
+```rust
+fn return_str<'a>() -> &'a str {
+  let mut s = "Rust".to_string();
+  for i in 0..3 {
+    s.push_str(" Good");
+  }
+  &s[..]  // "Rust Good Good Good"
+}
+fn main() {
+  let x = return_str();
+}
+```
+
+此例编译不通过，修正的办法之一是返回 String 类型而不是 &str。
+
+一个正确的示例：
+
+```rust
+fn the_longest<'a>(s1: &'a str, s2: &'a str) -> &'a str {
+  if s1.len() > s2.len() { s1 } else { s2 }
+}
+fn main() {
+  let s1 = String::from("Rust");
+  let s1_r = &s1;
+  {
+    let s2 = String::from("C");
+    let res = the_longest(s1_r, &s2);
+    println!("{} is the longest", res);
+  }
+}
+```
+
+结构体定义中的生命周期参数
+
+结构体在含有引用类型成员的时候也需要标注生命周期参数，否则编译不通过。示例：
+
+```rust
+struct Foo<'a> {
+  part: &'a str,
+}
+fn main() {
+  let words = String::from("Sometimes think, the greatest sorrow than older");
+  let first = words.split(',').next().expect("Could not find a ','");
+  let f = Foo { part: first };
+  assert_eq!("Sometimes think", f.part);
+}
+```
+
+这里的生命周期参数标记，实际上是和编译器约定了一个规则：结构体实例的生命周期应短于或等于任意一个成员的生命周期。
+
+方法定义中的生命周期参数：比如为上例中的 Foo 实现方法，因为其包含引用类型成员，标注了生命周期参数，所以需要在 impl 关键字之后声明生命周期参数。
+
+```rust
+#[derive(Debug)]
+struct Foo<'a> {
+  part: &'a str,
+}
+impl<'a> Foo<'a> {
+  fn split_fist(s: &'a str) -> &'a str {
+    s.split(',').next().expect("Could not find a ','")
+  }
+  fn new(s: &'a str) -> Self {
+    Foo { part: Foo::split_first(s) }
+  }
+}
+fn main() {
+  let words = String::from("Sometimes think, the ...");
+  println!("{:?}", Foo::new(words.as_str()));
+}
+```
+
+静态生命周期参数：`'static`。它存活于整个程序运行期间。所有的字符串字面量都有 `'static` 生命周期，类型为 `&'static str`。
+
+```rust
+fn main() {
+  let x = "hello rust"; // "hello rust" 字面值存储在只读数据段，x 的值是把 "hello rust" 拷贝到栈上
+  let y = x; // y 的值是 x 在栈上又进行了一次拷贝
+  assert_eq!(x, y);
+}
+```
+
+5.5.2 省略生命周期参数
+
+三条规则，详略，需要时再细看。
+
+5.5.3 生命周期限定
+
+- `T: 'a` 表示 T 类型中的任何引用都要 "活得" 和 `'a` 一样长
+- `T: Trait + 'a` 表示 T 类型必须实现 Trait 这个 trait 且 T 类型中任何引用都要 "活得" 和 `'a` 一样长
+
+  5.5.4 trait 对象的生命周期
+
+暂略。
+
+### 5.6 智能指针与所有权
+
+除了普通的引用 (借用) 类型，Rust 还提供具有移动语义 (引用语义) 的智能指针。两者区别之一就是所有权的不同，智能指针拥有资源的所有权，而普通引用只是对所有权的借用。
+
+```rust
+fn main() {
+  let x = Box::new("hello");
+  let y = x;
+  println!("{:?}", x); // error! 所有权转移给了 y
+}
+```
+
+解引用移动?? (暂不理解，先跳过)
+
+Rust 源码内部使用 box 关键字进行堆内存分配，box 未作为公开 API，内部还包括堆内存分配方法 `exchange_malloc` 和堆内存释放方法 `box_free`。
+
+5.6.1 共享所有权 `Rc<T>` 和 `Weak<T>`
+
+引用计数，多个变量共享多个所有权。`Weak<T>` 弱引用用来解决循环引用导致的内存泄漏。
+
+```rust
+fn main() {
+  let x = Rc::new(45);
+  let y1 = x.clone(); // 增加强引用计数
+  let y2 = x.clone(); // 增加强引用计数
+  println!("{:?}",  Rc::strong_count(&x));
+  let w = Rc::downgrade(&x); // 增加弱引用计数
+  println!("{:?}",  Rc::weak_count(&x));
+  let y3 = &*x; // 不增加计数
+  println!("{}", 100 - *x);
+}
+```
+
+5.6.2 内部可变性 `Cell<T>` 和 `RefCell<T>`
+
+Rust 中的可变或不可变主要是针对一个变量绑定而言的，比如对于结构体来说，可变或不可变只能对其实例进行设置，而不能设置单个成员的可变性。但是在实际的开发中，某个字段是可变而其它字段不可变的情况确实存在。Rust 提供了 `Cell<T>` 和 `RefCell<T>` 来应对这种情况。它们本质上不属于智能指针，只是可以提供内部可变性的容器。
+
+`Cell<T>` 用来实现字段级可变的情况，且该字段一般是值语义。而 `RefCell<T>` 一般用于引用语义的字段。
+
+Cell 示例：
+
+```rust
+use std::cell::Cell;
+struct Foo {
+  x: u32;
+  y: Cell<u32>
+}
+fn main() {
+  let foo = Foo { x: 1, y: Cell::new(3) };
+  assert_eq!(1, foo.x);
+  assert_eq!(3, foo.y.get());
+  foo.y.set(5);
+  assert_eq!(5, foo.y.get());
+}
+```
+
+RefCell 示例：
+
+```rust
+use std::cell::RefCell;
+fn main() {
+  let x = RefCell::new(vec![1, 2, 3, 4]);
+  println!("{:?}", x.borrow());
+  x.borrow_mut().push(5);
+  println!("{:?}", x.borrow());
+}
+```
+
+`RefCell<T>` 提供了 borrow/borrow_mut 方法，对应 `Cell<T>` 的 get/set 方法。
+
+`Cell<T>` 和 `RefCell<T>` 使用最多的场景就是配合只读引用来使用，比如 `Rc<RefCell<T>>`。
+
+5.6.3 写时复制 `Cow<T>`
+
+真正需要修改时再进行 clone。`Cow<T>` 提供的功能是，以不可变的方式访问借用内容，以及在需要可变借用或所有权的时候再克隆一份数据。`Cow<T>` 实现了 Deref，所以它可以直接调用其包含数据的不可变方法。`Cow<T>` 旨在减少复制操作，提高性能，一般用于读多写少的场景。
+
+`Cow<T>` 的另一个用处是统一实现规范。...
+
+暂未理解，先跳过。
+
+### 5.7 并发安全与所有权
+
+后面会详述。
+
+### 5.8 非词法作用域生命周期 (Non-Lexical Lifetime, NLL)
+
+其它笔记中有记录，略。
