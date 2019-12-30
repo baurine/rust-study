@@ -587,3 +587,84 @@ fn main() {
 ### 5.8 非词法作用域生命周期 (Non-Lexical Lifetime, NLL)
 
 其它笔记中有记录，略。
+
+## 第六章 函数、闭包和迭代器
+
+### 6.1 函数
+
+详略，在其它笔记中已有记录。
+
+在函数参数中可以使用模式匹配。
+
+### 6.2 闭包
+
+详略，在其它笔记中已有记录，但此书这块的内容介绍得深入一些，细节先跳过，遇到问题再回来看。
+
+### 6.3 迭代器
+
+6.3.1 外部迭代器和内部迭代器
+
+外部迭代器也叫主动迭代器，它独立于容器之外...外部迭代器的一个重要特点是，外部可以控制整个遍历过程。一般是用 for 循环来进行控制。
+
+内部迭代器则通过迭代器自身来控制迭代下一个元素，外部无法干预。一般是通过高阶函数来实现。比如 JavaScript 中的 forEach/map，Ruby 中的 each。
+
+Rust 早期实现是内部迭代器，使用较复杂，后来改成了外部迭代器，用 for...in 来进行控制。
+
+迭代器需要实现 Iterator trait。
+
+```rust
+trait Iterator {
+  type Item;
+  fn next(&mut self) -> Option<Self::Item>
+}
+```
+
+Iterator 还提供了一个叫 `size_hint()` 的方法，用来获取该迭代器还剩余的元素长度，目的是用来优化迭代器。(暂时跳过)
+
+6.3.3 IntoIterator trait
+
+将指定类型转换成迭代器。另外还有对应的 FromIterator trait，进行反操作，将迭代器转换回指定类型。
+
+```rust
+pub trait IntoIterator {
+  type Item;
+  type IntoIter: Iterator<Item=Self::Item>;
+  fn into_iter(self) -> Self::IntoIter;
+}
+```
+
+最常用的集合容器 `Vec<T>` 类型，它实现了 IntoIterator，可以通过 `into_iter()` 方法转换成迭代器。
+
+另外 Rust 还提供不需要转移所有权的迭代器。
+
+- IntoIter，转移所有权，对应 self
+- Iter，获得不可变借用，对应 &self
+- IterMut，获得可变借用，对应 &mut self
+
+Iter 和 IterMut 迭代器的典型应用是 slice 类型...
+
+Rust 中迭代器不只这三种，String / HashMap 类型还有 Drain 迭代器，可以迭代删除指定范围内的值...
+
+6.3.4 迭代器适配器
+
+Map/Filter/Rev... 不同于 JavaScript/Ruby 中的 filter/map 等方法，Rust 中的迭代器适配器是惰性的，如果没有被下游消费，Map/Filter 这此适配器不会真正地执行 (更像是 Rx 中的 filter/map 等方法)
+
+内部实现也确实跟 Rx 更像，当声明 `.map(|x| x*2)` 时，只是把闭包保存到了内部结构体中，并没有真正的执行这个闭包，当下游进行消费时，才会真正地执行这个闭包。
+
+6.3.5 迭代器消费器
+
+前面说了，Rust 中的迭代器都是惰性的，它们不会自动发生遍历行为，除非调用 next() 方法去消费其中的数据。最直接消费迭代器数据的方法就是 for 循环，它会隐式地调用 next() 方法。
+
+为了便利和性能，Rust 也提供了 for 循环之外的用于消费迭代器中数据的方法，称它们为消费器 (Consumer)。常见的消费器：
+
+- any
+- fold (其实就是 reduce)，新版本 Rust 还增加了 sum 消费器
+- collect - 将迭代器转换成指定的集合类型，比如 `collect::<Vec<i32>>()`，则迭代器最终会转换成 `Vec<i32>` 这样的数组。因此，它也被称为收集器
+- 其它
+
+(JavaScript/Ruby 中没有区分适配器，消费器，统一被称为高阶函数)
+
+6.3.6 自定义迭代器适配器
+
+实现了一个自定义的 step() 迭代器适配器。详略，没太看懂，需要时再看。
+
