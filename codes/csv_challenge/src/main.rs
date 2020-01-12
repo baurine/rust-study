@@ -1,14 +1,10 @@
-use structopt::StructOpt;
-mod opt;
-use self::opt::Opt;
-mod core;
-mod err;
-use self::core::{
-    read::{load_csv, write_csv},
-    write::replace_column,
-};
 use std::path::PathBuf;
 use std::process;
+use structopt::StructOpt;
+
+use csv_challenge::{
+    replace_column, Opt, {load_csv, write_csv},
+};
 
 fn main() {
     let opt = Opt::from_args();
