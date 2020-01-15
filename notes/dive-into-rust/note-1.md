@@ -992,7 +992,7 @@ Rust 使用 `thread::spawn()` 启动一个子线程，使用 `thread.join()` 等
 
 ```rust
 use std::thread;
-// child 的类型是 JoinHandle<T>,这个T是闭包的返回类型
+// child 的类型是 JoinHandle<T>,这个 T 是闭包的返回类型
 let child = thread::spawn(move || {
   // 子线程的逻辑
 });
@@ -1102,7 +1102,7 @@ Send / Sync 是 marker trait，没有方法，只是用来给类型作标记。
 
 mpsc: Multi-producers, single-consumer FIFO queue。在不同线程之间建立一个通信管道 (channel)，一边发送消息，一边接收消息。
 
-> Do not communicate by sharing memory;instead，share memory by communicating. -- Effective Go
+> Do not communicate by sharing memory; instead，share memory by communicating. -- Effective Go
 
 ### 30.1 异步管道
 
@@ -1272,7 +1272,7 @@ pub struct MyAwesomeType;
 
   #[bench]
   fn big_num(b: &mut Bencher) {
-    b.iter(|| gcd(12345, 67890) )
+    b.iter(|| gcd(12345, 67890))
   }
 }
 ```
