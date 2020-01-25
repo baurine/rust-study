@@ -1502,3 +1502,172 @@ Pin 与 UnPin。
 ### 11.4 数据并行
 
 SIMD... 先跳过。
+
+## 第十二章 元编程
+
+元编程：用代码生成代码。
+
+元编程技术分类：
+
+1. 简单文本替换：c/c++ 的宏定义
+1. 类型模板：c++ 的模板
+1. 反射：ruby/java/go/rust 或多或少都支持反射，在运行时或编译时获取程序内部信息
+1. 语法扩展：ruby/elixir/rust 等语言可以对抽象语法树进行操作而扩展语言的语法
+1. 代码自动生成：go generate 命令将注释自动生成代码
+
+rust 支持反射和 AST 语法扩展两种手段。
+
+### 12.1 反射 (reflect)
+
+反射机制，程序自我访问、检测和修改自身状态或行为的能力。Rust 标准库提供了 std::any::Any 来支持运行时反射。
+
+主要是提供了一个：
+
+- is() 方法判断类型
+- `downcast_ref()` 和 `downcast_mut()` 方法用于将泛型 T 向下转换成具体的类型
+
+详略，需要时再细看。
+
+### 12.2 宏系统 (macro)
+
+宏即批处理，根据预定义的规则转换成相应的输出，这个转换过程叫宏展开。
+
+#### 12.2.1 起源
+
+宏操作大致分两种：
+
+- 文本替换：c/c++
+- 语法扩展：源于 Lisp 的 S 表达式
+
+示例：
+
+```lisp
+(defmacro one! (var)
+  (list 'setq var 1)
+)
+
+(+ (one! x) 2) // 调用宏
+(+ (setq x 1) 2) // 宏展开
+```
+
+#### 12.2.2 Rust 中宏的种类
+
+两大类：
+
+- 声明宏 (declarative marcro) - 使用 `macro_rule!` 声明
+- 过程宏 (procedural macro) - 实现自定义派生属性，比如 Serde 库实现的 `#[derive(Serialize, Deserialize)]`
+
+宏的使用：
+
+- 调用宏，比如 `println!`，`assert_eq!` 等，通常由声明宏来实现，也可以由过程宏来实现
+- 属性宏，形如 `#[derive(Debug)]` 或 `#[cfg]` 这种形式的语法，可以通过过程宏来实现，也可以通过编译器插件实现
+
+宏的来源：
+
+- 内置宏：又有两种，一种是标准库实现，一种是编译器固有行为；
+- 自定义宏
+
+一个声明宏的示例：
+
+```rust
+macro_rule! unless {
+  ($arg: expr, $branch: expr) => (if !$arg { $branch };);
+}
+
+fn cmp(a: i32, b: i32) {
+  unless!(a>b, {
+    println!("{} < {}", a , b);
+  })
+}
+```
+
+#### 12.2.3 编译过程
+
+详略。
+
+#### 12.2.4 声明宏
+
+声明宏的格式：
+
+```rust
+macro_rule! $name {
+  $rule0;
+  $rule1;
+  //...
+  $ruleN;
+}
+```
+
+每条 rule 的格式：`( $pattern ) => ( $expansion )`
+
+上例中 `($arg: expr, $branch: expr) => (if !$arg { $branch };);`，$arg 表示捕获变量，expr 表示捕获类型，expr 指表达式类型。
+
+其它捕获类型：
+
+- item - 语言项，组成一个 rust 包的基本单元
+- block - 代码块，花括号组成的
+- stmt - 语句，一般指分号结尾的代码
+- expr - 表达式，会生成具体的值
+- pat - 模式
+- ty - 类型
+- ident - 标识符
+- path - 路径，比如 std::iter 等
+- meta - 元信息，表示包含在 `#[...]` 属性内的信息
+- tt - TokenTree 缩写
+- vis - 可见性，比如 pub
+- lifetime - 生命周期参数
+
+声明宏的实现技巧，以 `hashmap!()` 的实现为例。
+
+使用：
+
+```rust
+fn main() {
+  let map = hashmap!{
+    "a" => 1,
+    "b" => 2
+  }
+  assert_eq!(map["a"], 1);
+}
+```
+
+实现：首先区配 `key => value` 的定义格式，可以用 `$key: expr => $value: expr`，另外要求可以重复匹配，Rust 的宏支持重复匹配，格式是 `$(...) sep rep`。seq 表示分隔符，rep 表示重复次数，可以用数据或 `*`, `+`。
+
+初版实现：
+
+```rust
+macro_rule! hashmap {
+  ($($key:expr => $value:expr),*) => {
+    let mut _map = ::std::collections::HashMap::new();
+    $(
+      _map.insert($key, $value);
+    )*
+    _map
+  }
+}
+```
+
+初版有个问题，hashmap 最后一项不能用逗号结尾，优化，详略，需要时再看吧。
+
+调试宏：详略。
+
+声明宏的卫生性：即不会污染原来的词法作用域，详略。
+
+宏的导入导出：详略。
+
+#### 12.2.5 过程宏
+
+过程宏可以实现三种类型的宏：
+
+1. 自定义派生属性，类似 `#[derive(Debug)]` 这种
+1. 自定义属性，类似 `#[cfg()]` 这种
+1. Bang 宏，和 `macro_rule!` 定义的宏类似
+
+示例，详略。
+
+### 12.3 编译器插件
+
+暂时先跳过。
+
+web 框架 rocket 实现了很多自定义属性。
+
