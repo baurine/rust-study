@@ -1,5 +1,13 @@
 # 《The Rust Programming Language》Note 5
 
+14. Cargo 和 Crates.io
+15. 智能指针
+16. 无畏并发
+17. Rust 的面向对象特性
+18. 模式用来匹配值的结构
+19. 高级特性
+20. 最后的项目: 构建多线程 web server
+
 ## 14. Cargo 和 Crates.io
 
 这一章先跳过。需要时再回来看。

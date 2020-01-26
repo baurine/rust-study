@@ -1,5 +1,9 @@
 # 《The Rust Programming Language》Note 3
 
+8. 通用集合类型
+9. 错误处理
+10. 泛型、trait 和生命周期
+
 ## 8. 通用集合类型
 
 - vector

@@ -1,5 +1,10 @@
 # 《The Rust Programming Language》Note 2
 
+4. 理解所有权
+5. 使用结构体组织相关数据
+6. 枚举和模式匹配
+7. 包、Crates 与模块
+
 ## 4. 理解所有权
 
 > 所有权（系统）是 Rust 最独特的功能，其令 Rust 无需垃圾回收（garbage collector）即可保障内存安全。
