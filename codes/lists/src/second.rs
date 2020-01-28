@@ -1,7 +1,7 @@
 // use std::mem;
 
-pub struct List {
-  head: Link,
+pub struct List<T> {
+  head: Link<T>,
 }
 
 // 其实就是 Option 啊
@@ -9,19 +9,19 @@ pub struct List {
 //   None,
 //   Some(Box<Node>),
 // }
-type Link = Option<Box<Node>>;
+type Link<T> = Option<Box<Node<T>>>;
 
-struct Node {
-  elem: i32,
-  next: Link,
+struct Node<T> {
+  elem: T,
+  next: Link<T>,
 }
 
-impl List {
+impl<T> List<T> {
   pub fn new() -> Self {
     List { head: None }
   }
 
-  pub fn push(&mut self, elem: i32) {
+  pub fn push(&mut self, elem: T) {
     let new_node = Node {
       elem,
       // next: self.head,
@@ -32,7 +32,7 @@ impl List {
     self.head = Some(Box::new(new_node));
   }
 
-  pub fn pop(&mut self) -> Option<i32> {
+  pub fn pop(&mut self) -> Option<T> {
     // 所有权的转移
     // 首先通过 mem::replace，得到了原来的 self.head (T 类型)
     // Some(node)，所有权转移到了 node 中
@@ -54,7 +54,7 @@ impl List {
   }
 }
 
-impl Drop for List {
+impl<T> Drop for List<T> {
   fn drop(&mut self) {
     // let mut cur_link = mem::replace(&mut self.head, None);
     let mut cur_link = self.head.take();
