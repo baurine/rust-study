@@ -228,7 +228,7 @@ impl Double for i32 {
 ...
 ```
 
-但也有限制，既所谓的孤儿规则：impl 块要么与 trait 的声明在同一个 crate 中，要么与类型的声明在同一个 crate 中。如果 trait 和 类型都来自外部，那编译器不允许你为这个类型 impl 该 trait。
+但也有限制，既所谓的孤儿规则：impl 块要么与 trait 的声明在同一个 crate 中，要么与类型的声明在同一个 crate 中。如果 trait 和类型都来自外部，那编译器不允许你为这个类型 impl 该 trait。
 
 ### 5.4 完整函数调用语法
 
